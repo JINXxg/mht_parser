@@ -2,10 +2,16 @@ import hashlib
 import json
 import mimetypes
 import re
+import sys
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import urlparse
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from model.mht_model import PartRecord
 
 from email.parser import BytesParser
