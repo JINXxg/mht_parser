@@ -1,0 +1,57 @@
+结构：email
+
+确定使用email来解析结构，可以获取所有part，图片的content-type:application/octet-stream需要特殊处理，
+真实使用场景需要考虑清除定时清除文件的问题，还有就是存文件部分的实现思路优化
+图片要做引用映射
+
+
+语义：BS4/DOM(what's this)
+
+表格处理：
+  1.当前表格归属模块:
+  策略是先找表格上部出现的最近加粗文本，若无就选带序号的普通文本
+  
+  2.单元格合并的处理：
+  rowspan,colspan
+
+  3.nested table：
+  不能将nested table进行提取到外部作为新的row
+
+
+图片：OCR 难点就是如何分片（保证处理效率）+ 映射保证信息回填单独一个模块
+单独模块，OCR/大模型处理图片的文本/结构化描述
+
+最终作为提示词的结构
+{
+  "schema": ["列1", "列2", "列3"],
+  "rows": [
+    {"列1": "...", "列2": "...", "列3": "..."},
+    ...
+  ]
+}
+
+
+需要调整模型输出的schema
+输出：必须返回一个数组，每个元素包含 row_index 和 test_cases[]
+
+目录结构：(最后要求记录完整的目录结构)
+mht/
+  models/
+    mht_model.py            # PartRecord, Block, TableBlock 等 IR
+  structure/
+    structure_parser.py     # 你已经完成：mht -> parts + dump manifest
+    part_index.py           # 新增：PartIndex（src -> PartRecord 的映射）
+  semantics/
+    html_semantics.py       # BS4：HTML -> Blocks（保序拆块）
+    table_semantics.py      # BS4：<table> -> TableBlock（表头/行/单元格）
+    image_semantics.py      # OCR/视觉：ImageInterpreter（可插拔）
+  pipeline.py               # 编排顺序
+  cleanup/
+    ttl_cleaner.py          # 定期删除 job_dir（与解析完全解耦）
+
+模型固定一个jobdir
+jobs/{job_id}/
+  input/原始上传.mht
+  structure/ (可选保留)
+  semantics/tables.json context.json context_summary.json
+  outputs/xmind.json
